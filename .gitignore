@@ -1,0 +1,12 @@
+node_modules
+.idea/
+.vscode/
+.VSCodeCounter/
+.next/
+.env
+next-env.d.ts
+.sentryclirc
+sw.*
+workbox-*
+swe-worker-*
+dist/
