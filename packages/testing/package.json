@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "gatekeeper-lib": "link:gatekeeper-lib",
-    "next": "14.2.9",
+    "next": "14.2.10",
     "react": "^18",
     "react-dom": "^18"
   },
