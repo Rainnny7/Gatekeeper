@@ -18,12 +18,11 @@ export interface BaseAdapter<C> {
     getUser(accessToken: string): Promise<BaseUser | undefined>;
 
     /**
-     * Check if the given email and username are unique.
+     * Check if the given email is unique.
      *
      * @param email the email to check
-     * @param username the username to check
      */
-    isEmailUsernameUnique(email: string, username: string): Promise<boolean>;
+    isEmailUnique(email: string): Promise<boolean>;
 
     /**
      * Create a new user.

@@ -1,6 +1,10 @@
 import { GatekeeperConfig } from "../types/config";
 import { BaseUser } from "../types/user/user";
 
+enum RouteErrors {
+    UserNotFound = "USER_NOT_FOUND",
+}
+
 /**
  * Handle the /@me route.
  *
@@ -16,5 +20,5 @@ export const handleMeRoute = async (
     const { password, passwordSalt, ...strippedUser } = user || {};
     return user
         ? Response.json(strippedUser)
-        : Response.json({ error: "User not found" }, { status: 404 });
+        : Response.json({ error: RouteErrors.UserNotFound }, { status: 404 });
 };

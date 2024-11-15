@@ -96,24 +96,19 @@ export class MongoAdapter implements BaseAdapter<MongoAdapterClient> {
     }
 
     /**
-     * Check if the given email and username are unique.
+     * Check if the given email is unique.
      *
      * @param email the email to check
-     * @param username the username to check
      */
-    async isEmailUsernameUnique(
-        email: string,
-        username: string
-    ): Promise<boolean> {
+    async isEmailUnique(email: string): Promise<boolean> {
         const client: MongoAdapterClient | undefined = await this.connect(); // Connect to the DB
         if (!client) throw new Error("Database is not connected");
 
-        // Check if either the email or username is already taken
+        // Check if the email is already taken
         const result = await client.users
             .aggregate([
-                { $match: { $or: [{ email }, { username }] } },
+                { $match: { email } },
                 { $group: { _id: "$email", count: { $sum: 1 } } },
-                { $group: { _id: "$username", count: { $sum: 1 } } },
             ])
             .toArray();
         return result.length === 0 || result[0].count === 0;

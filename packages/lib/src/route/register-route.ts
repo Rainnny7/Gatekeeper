@@ -12,6 +12,14 @@ import { scryptSync } from "crypto";
 import { generateSession } from "../lib/auth";
 import { BaseSession } from "../types/user/session";
 
+enum RouteErrors {
+    InvalidPayload = "INVALID_PAYLOAD",
+    InvalidEmail = "INVALID_EMAIL",
+    InvalidUsername = "INVALID_USERNAME",
+    PasswordMismatch = "PASSWORD_MISMATCH",
+    EmailTaken = "EMAIL_TAKEN",
+}
+
 /**
  * Handle the /login route.
  *
@@ -38,20 +46,27 @@ export const handleRegisterRoute = async (
         !("password" in body) ||
         !("confirmedPassword" in body)
     ) {
-        return Response.json({ error: "Invalid payload" }, { status: 400 });
+        return Response.json(
+            { error: RouteErrors.InvalidPayload },
+            { status: 400 }
+        );
     }
     // Validate the email and username
     const emailValid: boolean = isEmailValid(body.email);
     if (!emailValid || !isUsernameValid(body.username)) {
         return Response.json(
-            { error: `Invalid ${!emailValid ? "email" : "username"}` },
+            {
+                error: !emailValid
+                    ? RouteErrors.InvalidEmail
+                    : RouteErrors.InvalidUsername,
+            },
             { status: 400 }
         );
     }
     // Ensure the passwords match
     if (body.password !== body.confirmedPassword) {
         return Response.json(
-            { error: "Passwords do not match" },
+            { error: RouteErrors.PasswordMismatch },
             { status: 400 }
         );
     }
@@ -63,15 +78,10 @@ export const handleRegisterRoute = async (
     if (passwordError) {
         return Response.json({ error: passwordError }, { status: 400 });
     }
-    // Ensure both the email and username are unique
-    if (
-        !(await config.adapter?.isEmailUsernameUnique(
-            body.email,
-            body.username
-        ))
-    ) {
+    // Check if the email is unique
+    if (!(await config.adapter?.isEmailUnique(body.email))) {
         return Response.json(
-            { error: "Email or username is already taken" },
+            { error: RouteErrors.EmailTaken },
             { status: 400 }
         );
     }
