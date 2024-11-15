@@ -2,7 +2,7 @@ export interface BaseUser {
     /**
      * The snowflake id of this user.
      */
-    snowflake: number;
+    snowflake: string;
 
     /**
      * This user's email.
@@ -10,27 +10,17 @@ export interface BaseUser {
     email: string;
 
     /**
-     * This user's username.
+     * The encrypted password of this user.
      */
-    username: string;
+    password: string;
 
     /**
-     * The hash to the avatar of this user, if any.
+     * The salt for this user's password.
      */
-    avatar: string | undefined;
-
-    /**
-     * The flags for this user.
-     */
-    flags: number;
+    passwordSalt: string;
 
     /**
      * The date this user last logged in.
      */
     lastLogin: Date;
-
-    /**
-     * The date this user was created.
-     */
-    created: Date;
 }

@@ -4,10 +4,21 @@ import { deepMerge } from "./lib/array";
 import { RequestCookie } from "next/dist/compiled/@edge-runtime/cookies";
 import { cookies } from "next/headers";
 import { handleMeRoute } from "./route/me-route";
+import { handleRegisterRoute } from "./route/register-route";
 
+/**
+ * The default config for Gatekeeper.
+ */
 export const defaultConfig: GatekeeperConfig = {
     endpoint: "/api",
     sessionCookieName: "gatekeeper-session",
+    passwordRequirements: {
+        minLength: 7,
+        maxLength: 128,
+        alphabet: true,
+        numeric: true,
+        special: true,
+    },
     routes: {
         me: "/@me",
         login: "/login",
@@ -25,14 +36,36 @@ export const Gatekeeper = (customConfig: Partial<GatekeeperConfig> = {}) => {
     ) => {
         const action: string = (await params).slug; // The action to perform
 
-        // Extract the access token from the request
-        let accessToken: string | null = request.headers.get("Authorization");
-        if (!accessToken || !accessToken.startsWith("Bearer ")) {
-            return Response.json({ error: "Unauthorized" }, { status: 401 });
+        // Extract the access token from the request if necessary
+        let accessToken: string | null = null;
+        if (action !== "register" && action !== "login") {
+            if (config.debug) console.debug("Looking for access token...");
+            accessToken = request.headers.get("Authorization");
+            if (!accessToken || !accessToken.startsWith("Bearer ")) {
+                return Response.json(
+                    { error: "Unauthorized" },
+                    { status: 401 }
+                );
+            }
+            accessToken = accessToken.substring(7);
+            if (config.debug)
+                console.debug(`Found access token: ${accessToken}`);
         }
-        accessToken = accessToken.substring(7);
 
-        if (request.method === "GET" && action === "@me") {
+        // Handle each action separately
+        if (config.debug)
+            console.debug(
+                `Handling action: ${action} (method: ${request.method})`
+            );
+        if (request.method === "POST" && action === "register") {
+            return handleRegisterRoute(request, config);
+        } else if (request.method === "POST" && action === "login") {
+            // TODO: Handle login
+        } else if (
+            request.method === "GET" &&
+            action === "@me" &&
+            accessToken
+        ) {
             return handleMeRoute(accessToken, config);
         }
         return Response.json({ error: "Route not found" }, { status: 404 });
@@ -49,8 +82,8 @@ export const Gatekeeper = (customConfig: Partial<GatekeeperConfig> = {}) => {
          */
         getUser: async (): Promise<
             | {
-                  session: typeof config.sessionAdapter;
-                  user: typeof config.userAdapter;
+                  session: typeof config.sessionType;
+                  user: typeof config.userType;
               }
             | undefined
         > => {
@@ -59,7 +92,7 @@ export const Gatekeeper = (customConfig: Partial<GatekeeperConfig> = {}) => {
                 await cookies()
             ).get(config.sessionCookieName);
 
-            let session: typeof config.sessionAdapter | undefined;
+            let session: typeof config.sessionType | undefined;
             if (
                 !sessionCookie?.value ||
                 !("accessToken" in (session = JSON.parse(sessionCookie.value)))
@@ -79,7 +112,7 @@ export const Gatekeeper = (customConfig: Partial<GatekeeperConfig> = {}) => {
                 ? undefined
                 : {
                       session,
-                      user: (await response.json()) as typeof config.userAdapter,
+                      user: (await response.json()) as typeof config.userType,
                   };
         },
     } as any;

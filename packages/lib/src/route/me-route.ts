@@ -13,7 +13,8 @@ export const handleMeRoute = async (
 ) => {
     const user: BaseUser | undefined =
         await config.adapter?.getUser(accessToken);
+    const { password, passwordSalt, ...strippedUser } = user || {};
     return user
-        ? Response.json(user)
+        ? Response.json(strippedUser)
         : Response.json({ error: "User not found" }, { status: 404 });
 };

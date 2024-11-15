@@ -3,6 +3,11 @@
  */
 export interface BaseSession {
     /**
+     * The snowflake id of this session.
+     */
+    snowflake: string;
+
+    /**
      * The access token for this session.
      */
     accessToken: string;
@@ -15,7 +20,7 @@ export interface BaseSession {
     /**
      * The snowflake of the user this session is for.
      */
-    user: number;
+    user: string;
 
     /**
      * The unix time this session expires.

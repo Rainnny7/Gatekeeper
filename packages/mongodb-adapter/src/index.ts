@@ -1,4 +1,4 @@
-import { Collection, ObjectId, Db, MongoClient } from "mongodb";
+import { Collection, Db, MongoClient, WithId } from "mongodb";
 import { BaseSession } from "gatekeeper-lib/types/user/session";
 import { BaseUser } from "gatekeeper-lib/types/user/user";
 import { BaseAdapter } from "gatekeeper-lib/adapter/base-adapter";
@@ -22,12 +22,15 @@ const defaultConfig: MongoAdapterConfig = {
     },
 };
 
+type DatabaseSession = { _id: string } & BaseSession;
+type DatabaseUser = { _id: string } & BaseUser;
+
 /**
  * The client for this adapter.
  */
 type MongoAdapterClient = {
-    sessions: Collection<BaseSession>;
-    users: Collection<BaseUser>;
+    sessions: Collection<DatabaseSession>;
+    users: Collection<DatabaseUser>;
 };
 
 /**
@@ -69,16 +72,95 @@ export class MongoAdapter implements BaseAdapter<MongoAdapterClient> {
      * @param accessToken the access token
      */
     async getUser(accessToken: string): Promise<BaseUser | undefined> {
-        const client: MongoAdapterClient | undefined = await this.connect();
-        if (!client) return undefined;
+        const client: MongoAdapterClient | undefined = await this.connect(); // Connect to the DB
+        if (!client) throw new Error("Database is not connected");
 
-        // find the user id by the access token and then map it to the user from the users collection
-        const userId = await client.sessions.findOne({ accessToken });
-        const user =
-            userId &&
-            (await client.users.findOne({ _id: new ObjectId(userId.user) }));
-        console.log({ userId, user });
+        const result = await client.sessions
+            .aggregate([
+                { $match: { accessToken } },
+                {
+                    $lookup: {
+                        from: "users",
+                        localField: "user",
+                        foreignField: "_id",
+                        as: "user",
+                    },
+                },
+                { $unwind: "$user" },
+                { $replaceRoot: { newRoot: "$user" } },
+            ])
+            .toArray();
+        return result.length
+            ? this.transformWithId(result[0] as WithId<BaseUser>)
+            : undefined;
+    }
 
-        // return user ? { ...user, snowflake: `sfsfds` } : undefined;
+    /**
+     * Check if the given email and username are unique.
+     *
+     * @param email the email to check
+     * @param username the username to check
+     */
+    async isEmailUsernameUnique(
+        email: string,
+        username: string
+    ): Promise<boolean> {
+        const client: MongoAdapterClient | undefined = await this.connect(); // Connect to the DB
+        if (!client) throw new Error("Database is not connected");
+
+        // Check if either the email or username is already taken
+        const result = await client.users
+            .aggregate([
+                { $match: { $or: [{ email }, { username }] } },
+                { $group: { _id: "$email", count: { $sum: 1 } } },
+                { $group: { _id: "$username", count: { $sum: 1 } } },
+            ])
+            .toArray();
+        return result.length === 0 || result[0].count === 0;
+    }
+
+    /**
+     * Create a new user.
+     *
+     * @param user the user to create
+     */
+    async createUser(user: BaseUser): Promise<void> {
+        const client: MongoAdapterClient | undefined = await this.connect(); // Connect to the DB
+        if (!client) throw new Error("Database is not connected");
+
+        const { snowflake, ...userWithoutSnowflake } = user;
+        await client.users.insertOne({
+            _id: snowflake,
+            ...userWithoutSnowflake,
+        } as DatabaseUser);
+    }
+
+    /**
+     * Store a session for a user.
+     *
+     * @param session the session to store
+     */
+    async storeSession(session: BaseSession): Promise<void> {
+        const client: MongoAdapterClient | undefined = await this.connect(); // Connect to the DB
+        if (!client) throw new Error("Database is not connected");
+
+        const { snowflake, ...sessionWithoutSnowflake } = session;
+        await client.sessions.insertOne({
+            _id: snowflake,
+            ...sessionWithoutSnowflake,
+        } as DatabaseSession);
+    }
+
+    /**
+     * Transform the given document containing
+     * _id long and make it a string.
+     *
+     * @param document the document to transform
+     */
+    private transformWithId<T>(document: WithId<T>): T & { snowflake: string } {
+        const { _id, ...rest } = document;
+        return { snowflake: document._id.toString(), ...rest } as T & {
+            snowflake: string;
+        };
     }
 }

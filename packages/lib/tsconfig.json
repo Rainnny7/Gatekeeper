@@ -12,8 +12,13 @@
     "isolatedModules": true,
     "strict": true,
     "baseUrl": "./",
-    "jsx": "react-jsx",
+    "jsx": "react-jsx"
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
