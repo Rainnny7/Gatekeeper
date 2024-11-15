@@ -2,6 +2,8 @@ import { BaseUser } from "../types/user/user";
 import { BaseSession } from "../types/user/session";
 
 /**
+ * An adapter for database interactions.
+ *
  * @template C the database client type
  */
 export interface BaseAdapter<C> {

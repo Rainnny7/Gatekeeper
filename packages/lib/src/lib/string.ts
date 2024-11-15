@@ -1,5 +1,5 @@
-const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-const USERNAME_REGEX = /^[a-zA-Z0-9._%+-]+$/;
+const EMAIL_REGEX = /^[A-Za-z0-9+_.-]+@(.+)$/;
+const USERNAME_REGEX = /^[a-zA-Z0-9_.]*$/;
 
 const ALPHABET_REGEX = /[a-zA-Z]/;
 const NUMERIC_REGEX = /\d/;
@@ -26,7 +26,7 @@ export type PasswordError =
  * @param email the email to check
  */
 export const isEmailValid = (email: string): boolean => {
-    return EMAIL_REGEX.test(email);
+    return email.length > 0 && EMAIL_REGEX.test(email);
 };
 
 /**
@@ -35,7 +35,7 @@ export const isEmailValid = (email: string): boolean => {
  * @param username the username to check
  */
 export const isUsernameValid = (username: string): boolean => {
-    return USERNAME_REGEX.test(username);
+    return username.length > 0 && USERNAME_REGEX.test(username);
 };
 
 /**

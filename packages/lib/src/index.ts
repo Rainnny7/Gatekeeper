@@ -14,7 +14,7 @@ export const defaultConfig: GatekeeperConfig = {
     sessionCookieName: "gatekeeper-session",
     passwordRequirements: {
         minLength: 7,
-        maxLength: 128,
+        maxLength: 76,
         alphabet: true,
         numeric: true,
         special: true,
