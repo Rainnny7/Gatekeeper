@@ -1,0 +1,31 @@
+{
+  "name": "@gatekeeper/mongodb-adapter",
+  "description": "The MongoDB adapter for Gatekeeper.",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsc --watch --preserveWatchOutput",
+    "build": "tsc"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "*.js",
+    "*.d.ts*",
+    "src"
+  ],
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "gatekeeper-lib": "link:gatekeeper-lib"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "mongoose": "^8.8.1"
+  }
+}

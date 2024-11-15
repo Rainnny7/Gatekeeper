@@ -1,0 +1,14 @@
+{
+  "extends": "../adapter-commons/tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist/",
+  },
+  "exclude": [
+    "*.js",
+    "*.d.ts"
+  ],
+  "include": [
+    "src/**/*"
+  ]
+}
