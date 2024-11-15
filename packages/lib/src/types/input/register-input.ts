@@ -8,11 +8,6 @@ export type RegisterInput = {
     email: string;
 
     /**
-     * The username to register with.
-     */
-    username: string;
-
-    /**
      * The password to register with.
      */
     password: string;

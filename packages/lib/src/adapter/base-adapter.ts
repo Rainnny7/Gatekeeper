@@ -13,11 +13,18 @@ export interface BaseAdapter<C> {
     connect(): Promise<C | undefined>;
 
     /**
-     * Get the user from the given access token.
+     * Locate the user from the given access token.
      *
      * @param accessToken the access token
      */
-    getUser(accessToken: string): Promise<BaseUser | undefined>;
+    locateUserByAccessToken(accessToken: string): Promise<BaseUser | undefined>;
+
+    /**
+     * Locate the user with the given email.
+     *
+     * @param email the user's email
+     */
+    locateUserByEmail(email: string): Promise<BaseUser | undefined>;
 
     /**
      * Check if the given email is unique.

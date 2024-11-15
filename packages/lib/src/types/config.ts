@@ -41,6 +41,11 @@ export type GatekeeperConfig<
     passwordRequirements: PasswordRequirements;
 
     /**
+     * The length of the password scrypt key.
+     */
+    passwordKeyLength: number;
+
+    /**
      * The paths for each route.
      */
     routes: {

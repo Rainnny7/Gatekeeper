@@ -1,4 +1,4 @@
-import { Collection, Db, MongoClient, WithId } from "mongodb";
+import { Collection, Db, Document, MongoClient, WithId } from "mongodb";
 import { BaseSession } from "gatekeeper-lib/types/user/session";
 import { BaseUser } from "gatekeeper-lib/types/user/user";
 import { BaseAdapter } from "gatekeeper-lib/adapter/base-adapter";
@@ -67,15 +67,17 @@ export class MongoAdapter implements BaseAdapter<MongoAdapterClient> {
     }
 
     /**
-     * Get the user from the given access token.
+     * Locate the user from the given access token.
      *
      * @param accessToken the access token
      */
-    async getUser(accessToken: string): Promise<BaseUser | undefined> {
+    async locateUserByAccessToken(
+        accessToken: string
+    ): Promise<BaseUser | undefined> {
         const client: MongoAdapterClient | undefined = await this.connect(); // Connect to the DB
         if (!client) throw new Error("Database is not connected");
 
-        const result = await client.sessions
+        const result: Document[] = await client.sessions
             .aggregate([
                 { $match: { accessToken } },
                 {
@@ -91,8 +93,24 @@ export class MongoAdapter implements BaseAdapter<MongoAdapterClient> {
             ])
             .toArray();
         return result.length
-            ? this.transformWithId(result[0] as WithId<BaseUser>)
+            ? this.transformWithId(result[0] as WithId<DatabaseUser>)
             : undefined;
+    }
+
+    /**
+     * Locate the user with the given email.
+     *
+     * @param email the user's email
+     */
+    async locateUserByEmail(email: string): Promise<BaseUser | undefined> {
+        const client: MongoAdapterClient | undefined = await this.connect(); // Connect to the DB
+        if (!client) throw new Error("Database is not connected");
+
+        // Locate the user by email
+        const user: WithId<DatabaseUser> | null = await client.users.findOne({
+            email,
+        });
+        return user ? this.transformWithId(user) : undefined;
     }
 
     /**
@@ -105,7 +123,7 @@ export class MongoAdapter implements BaseAdapter<MongoAdapterClient> {
         if (!client) throw new Error("Database is not connected");
 
         // Check if the email is already taken
-        const result = await client.users
+        const result: Document[] = await client.users
             .aggregate([
                 { $match: { email } },
                 { $group: { _id: "$email", count: { $sum: 1 } } },

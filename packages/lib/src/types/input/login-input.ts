@@ -3,17 +3,12 @@
  */
 export type LoginInput = {
     /**
-     * The email to login with, if given.
+     * The email to register with.
      */
-    email?: string | undefined;
+    email: string;
 
     /**
-     * The username to login with, if given.
-     */
-    username?: string | undefined;
-
-    /**
-     * The password to login with.
+     * The password to register with.
      */
     password: string;
 };

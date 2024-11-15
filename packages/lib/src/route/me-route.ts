@@ -1,9 +1,7 @@
 import { GatekeeperConfig } from "../types/config";
 import { BaseUser } from "../types/user/user";
-
-enum RouteErrors {
-    UserNotFound = "USER_NOT_FOUND",
-}
+import { GenericErrors } from "../types/error";
+import { buildErrorResponse } from "../lib/error";
 
 /**
  * Handle the /@me route.
@@ -14,11 +12,12 @@ enum RouteErrors {
 export const handleMeRoute = async (
     accessToken: string,
     config: GatekeeperConfig
-) => {
+): Promise<Response> => {
     const user: BaseUser | undefined =
-        await config.adapter?.getUser(accessToken);
-    const { password, passwordSalt, ...strippedUser } = user || {};
-    return user
-        ? Response.json(strippedUser)
-        : Response.json({ error: RouteErrors.UserNotFound }, { status: 404 });
+        await config.adapter?.locateUserByAccessToken(accessToken);
+    if (!user) {
+        return buildErrorResponse(GenericErrors.Unauthorized, 401);
+    }
+    const { password, passwordSalt, ...strippedUser } = user;
+    return Response.json(strippedUser);
 };

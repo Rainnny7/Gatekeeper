@@ -18,9 +18,4 @@ export interface BaseUser {
      * The salt for this user's password.
      */
     passwordSalt: string;
-
-    /**
-     * The date this user last logged in.
-     */
-    lastLogin: Date;
 }

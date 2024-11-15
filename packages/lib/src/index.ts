@@ -5,6 +5,9 @@ import { RequestCookie } from "next/dist/compiled/@edge-runtime/cookies";
 import { cookies } from "next/headers";
 import { handleMeRoute } from "./route/me-route";
 import { handleRegisterRoute } from "./route/register-route";
+import { handleLoginRoute } from "./route/login-route";
+import { buildErrorResponse } from "./lib/error";
+import { GenericErrors } from "./types/error";
 
 /**
  * The default config for Gatekeeper.
@@ -19,6 +22,7 @@ export const defaultConfig: GatekeeperConfig = {
         numeric: true,
         special: true,
     },
+    passwordKeyLength: 128,
     routes: {
         me: "/@me",
         login: "/login",
@@ -40,12 +44,11 @@ export const Gatekeeper = (customConfig: Partial<GatekeeperConfig> = {}) => {
         let accessToken: string | null = null;
         if (action !== "register" && action !== "login") {
             if (config.debug) console.debug("Looking for access token...");
-            accessToken = request.headers.get("Authorization");
-            if (!accessToken || !accessToken.startsWith("Bearer ")) {
-                return Response.json(
-                    { error: "Unauthorized" },
-                    { status: 401 }
-                );
+            if (
+                !(accessToken = request.headers.get("Authorization")) ||
+                !accessToken.startsWith("Bearer ")
+            ) {
+                return buildErrorResponse(GenericErrors.Unauthorized, 401);
             }
             accessToken = accessToken.substring(7);
             if (config.debug)
@@ -57,10 +60,23 @@ export const Gatekeeper = (customConfig: Partial<GatekeeperConfig> = {}) => {
             console.debug(
                 `Handling action: ${action} (method: ${request.method})`
             );
-        if (request.method === "POST" && action === "register") {
-            return handleRegisterRoute(request, config);
-        } else if (request.method === "POST" && action === "login") {
-            // TODO: Handle login
+        if (request.method === "POST") {
+            let body: any | undefined;
+            try {
+                body = await request.json();
+            } catch (error) {
+                // Safely ignore the error and handle it below
+            }
+            if (body && config.debug)
+                console.debug(`Received ${action} body:`, body);
+            if (!body) {
+                return buildErrorResponse(GenericErrors.InvalidPayload, 400);
+            }
+            if (action === "register") {
+                return handleRegisterRoute(body, config);
+            } else if (action === "login") {
+                return handleLoginRoute(body, config);
+            }
         } else if (
             request.method === "GET" &&
             action === "@me" &&
@@ -68,7 +84,7 @@ export const Gatekeeper = (customConfig: Partial<GatekeeperConfig> = {}) => {
         ) {
             return handleMeRoute(accessToken, config);
         }
-        return Response.json({ error: "Route not found" }, { status: 404 });
+        return buildErrorResponse("Route not found", 404);
     };
 
     // Return the result
