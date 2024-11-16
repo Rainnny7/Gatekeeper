@@ -31,6 +31,11 @@ export const defaultConfig: GatekeeperConfig = {
     },
 };
 
+enum RouteErrors {
+    RateLimitExceeded = "RATE_LIMIT_EXCEEDED",
+    InvalidRoute = "INVALID_ROUTE",
+}
+
 export const Gatekeeper = (customConfig: Partial<GatekeeperConfig> = {}) => {
     const config: GatekeeperConfig = deepMerge(defaultConfig, customConfig); // Combine the default and custom configs
 
@@ -47,7 +52,7 @@ export const Gatekeeper = (customConfig: Partial<GatekeeperConfig> = {}) => {
         if (rateLimitResponse) {
             if (!rateLimitResponse.allowed) {
                 return Ratelimiter.applyHeaders(
-                    buildErrorResponse("Rate limit exceeded", 429),
+                    buildErrorResponse(RouteErrors.RateLimitExceeded, 429),
                     rateLimitResponse
                 );
             }
@@ -105,7 +110,7 @@ export const Gatekeeper = (customConfig: Partial<GatekeeperConfig> = {}) => {
                 ? Ratelimiter.applyHeaders(response, rateLimitResponse)
                 : response;
         }
-        return buildErrorResponse("Route not found", 404);
+        return buildErrorResponse(RouteErrors.InvalidRoute, 404);
     };
 
     // Return the result
