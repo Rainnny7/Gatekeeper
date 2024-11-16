@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AuthProvider } from "gatekeeper-lib/context/auth-context";
 import { ReactElement, ReactNode } from "react";
 import { getUser } from "@/app/api/auth/[slug]/route";
-import { BaseSession } from "gatekeeper-lib/types/user/session";
+import { BaseUser } from "gatekeeper-lib/types/user/user";
+import { AuthProvider } from "gatekeeper-lib/context/auth-context";
 
 export const metadata: Metadata = {
     title: "Gatekeeper Example 💂🏼",
@@ -15,12 +15,13 @@ const RootLayout = async ({
 }: Readonly<{
     children: ReactNode;
 }>): Promise<ReactElement> => {
-    const user: BaseSession | undefined = await getUser();
+    const user: BaseUser | undefined = await getUser();
     console.log({ user });
+
     return (
         <html lang="en">
             <body className="antialiased">
-                <AuthProvider>{children}</AuthProvider>
+                <AuthProvider user={user}>{children}</AuthProvider>
             </body>
         </html>
     );

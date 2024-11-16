@@ -13,26 +13,25 @@ import { BaseUser } from "../types/user/user";
 /**
  * The props for this context.
  */
-interface AuthContextProps {
+export type AuthContextProps = {
     session: BaseSession | undefined;
     user: BaseUser | undefined;
-}
+};
+
+export type AuthProviderProps = {
+    user: any;
+    children: ReactNode;
+};
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
-/**
- * The provider used to store the state of the filter.
- *
- * @param children the children to provide to
- */
 export const AuthProvider = ({
+    user: defaultUser,
     children,
-}: {
-    children: ReactNode;
-}): ReactElement => {
+}: AuthProviderProps): ReactElement => {
     // Create the states
     const [session] = useState<BaseSession | undefined>(undefined);
-    const [user] = useState<BaseUser | undefined>(undefined);
+    const [user] = useState<BaseUser | undefined>(defaultUser);
 
     // Provide the context
     return (

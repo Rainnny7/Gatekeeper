@@ -14,7 +14,7 @@ import { Ratelimiter, RateLimitResponse } from "./middleware/ratelimiter";
  * The default config for Gatekeeper.
  */
 export const defaultConfig: GatekeeperConfig = {
-    endpoint: "/api",
+    endpoint: "http://localhost:3000/api/auth",
     sessionCookieName: "gatekeeper-session",
     passwordRequirements: {
         minLength: 7,
@@ -114,32 +114,37 @@ export const Gatekeeper = (customConfig: Partial<GatekeeperConfig> = {}) => {
     };
 
     // Return the result
+    const getSession = async <S extends typeof config.sessionType>(): Promise<
+        S | undefined
+    > => {
+        // Extract the session from the cookie
+        const sessionCookie: RequestCookie | undefined = (await cookies()).get(
+            config.sessionCookieName
+        );
+
+        let session: S | undefined;
+        if (
+            !sessionCookie?.value ||
+            !("accessToken" in (session = JSON.parse(sessionCookie.value)))
+        )
+            return undefined;
+        return session;
+    };
     return {
         GET: httpHandler,
         POST: httpHandler,
+        getSession,
 
         /**
          * Invoke a request to the API to retrieve the
          * currently logged in user via the session cookie.
          */
-        getUser: async (): Promise<
-            | {
-                  session: typeof config.sessionType;
-                  user: typeof config.userType;
-              }
-            | undefined
-        > => {
-            // Extract the session from the cookie
-            const sessionCookie: RequestCookie | undefined = (
-                await cookies()
-            ).get(config.sessionCookieName);
-
-            let session: typeof config.sessionType | undefined;
-            if (
-                !sessionCookie?.value ||
-                !("accessToken" in (session = JSON.parse(sessionCookie.value)))
-            )
-                return undefined;
+        getUser: async <
+            S extends typeof config.sessionType,
+            U extends typeof config.userType,
+        >(): Promise<U | undefined> => {
+            const session: S | undefined = await getSession(); // Get the session
+            if (!session) return undefined;
 
             // Fetch the user from the API using the session's access token
             const response: Response = await fetch(
@@ -152,10 +157,7 @@ export const Gatekeeper = (customConfig: Partial<GatekeeperConfig> = {}) => {
             );
             return response.status !== 200
                 ? undefined
-                : {
-                      session,
-                      user: (await response.json()) as typeof config.userType,
-                  };
+                : ((await response.json()) as U);
         },
     } as any;
 };
