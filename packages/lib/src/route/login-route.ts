@@ -7,6 +7,15 @@ import { scryptSync } from "crypto";
 import { buildErrorResponse } from "../lib/error";
 import { BaseSession } from "../types/user/session";
 import { generateSession } from "../lib/auth";
+import { Ratelimiter } from "../middleware/ratelimiter";
+
+/**
+ * Configure the rate limit for this route.
+ */
+Ratelimiter.configRoute("/login", {
+    windowMs: 1000 * 60,
+    maxRequests: 10, // 10 requests per minute
+});
 
 enum RouteErrors {
     InvalidPassword = "INVALID_PASSWORD",

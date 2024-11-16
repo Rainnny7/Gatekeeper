@@ -8,6 +8,7 @@ import { handleRegisterRoute } from "./route/register-route";
 import { handleLoginRoute } from "./route/login-route";
 import { buildErrorResponse } from "./lib/error";
 import { GenericErrors } from "./types/error";
+import { Ratelimiter, RateLimitResponse } from "./middleware/ratelimiter";
 
 /**
  * The default config for Gatekeeper.
@@ -40,6 +41,18 @@ export const Gatekeeper = (customConfig: Partial<GatekeeperConfig> = {}) => {
     ) => {
         const action: string = (await params).slug; // The action to perform
 
+        // Handle rate limiting
+        const rateLimitResponse: RateLimitResponse | undefined =
+            Ratelimiter.check(request, `/${action}`);
+        if (rateLimitResponse) {
+            if (!rateLimitResponse.allowed) {
+                return Ratelimiter.applyHeaders(
+                    buildErrorResponse("Rate limit exceeded", 429),
+                    rateLimitResponse
+                );
+            }
+        }
+
         // Extract the access token from the request if necessary
         let accessToken: string | null = null;
         if (action !== "register" && action !== "login") {
@@ -60,6 +73,7 @@ export const Gatekeeper = (customConfig: Partial<GatekeeperConfig> = {}) => {
             console.debug(
                 `Handling action: ${action} (method: ${request.method})`
             );
+        let response: Response | undefined;
         if (request.method === "POST") {
             let body: any | undefined;
             try {
@@ -70,19 +84,26 @@ export const Gatekeeper = (customConfig: Partial<GatekeeperConfig> = {}) => {
             if (body && config.debug)
                 console.debug(`Received ${action} body:`, body);
             if (!body) {
-                return buildErrorResponse(GenericErrors.InvalidPayload, 400);
-            }
-            if (action === "register") {
-                return handleRegisterRoute(body, config);
+                response = buildErrorResponse(
+                    GenericErrors.InvalidPayload,
+                    400
+                );
+            } else if (action === "register") {
+                response = await handleRegisterRoute(body, config);
             } else if (action === "login") {
-                return handleLoginRoute(body, config);
+                response = await handleLoginRoute(body, config);
             }
         } else if (
             request.method === "GET" &&
             action === "@me" &&
             accessToken
         ) {
-            return handleMeRoute(accessToken, config);
+            response = await handleMeRoute(accessToken, config);
+        }
+        if (response) {
+            return rateLimitResponse
+                ? Ratelimiter.applyHeaders(response, rateLimitResponse)
+                : response;
         }
         return buildErrorResponse("Route not found", 404);
     };

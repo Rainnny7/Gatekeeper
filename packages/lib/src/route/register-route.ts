@@ -12,6 +12,15 @@ import { generateSession } from "../lib/auth";
 import { BaseSession } from "../types/user/session";
 import { GenericErrors } from "../types/error";
 import { buildErrorResponse } from "../lib/error";
+import { Ratelimiter } from "../middleware/ratelimiter";
+
+/**
+ * Configure the rate limit for this route.
+ */
+Ratelimiter.configRoute("/register", {
+    windowMs: 1000 * 60,
+    maxRequests: 10, // 10 requests per minute
+});
 
 enum RouteErrors {
     PasswordMismatch = "PASSWORD_MISMATCH",

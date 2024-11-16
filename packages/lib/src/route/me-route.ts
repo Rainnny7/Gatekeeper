@@ -2,6 +2,15 @@ import { GatekeeperConfig } from "../types/config";
 import { BaseUser } from "../types/user/user";
 import { GenericErrors } from "../types/error";
 import { buildErrorResponse } from "../lib/error";
+import { Ratelimiter } from "../middleware/ratelimiter";
+
+/**
+ * Configure the rate limit for this route.
+ */
+Ratelimiter.configRoute("/@me", {
+    windowMs: 1000 * 60,
+    maxRequests: 50, // 50 requests per minute
+});
 
 /**
  * Handle the /@me route.
